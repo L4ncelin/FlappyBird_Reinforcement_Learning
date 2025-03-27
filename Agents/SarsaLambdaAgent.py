@@ -16,17 +16,14 @@ class SarsaLambdaAgent:
         if random.uniform(0, 1) < self.epsilon:
             return random.choice(range(self.action_size))
         else:
-            # state_idx = (state[0], state[1] + 11) 
             return np.argmax(self.w[state])
     
     def update_policy(self, state, action, reward, next_state, next_action, done):
-        # state_idx = (state[0], state[1] + 11)
-        # next_state_idx= (next_state[0], next_state[1] + 11)
+        delta = reward + (self.gamma * self.w[next_state[0], next_state[1], next_action] * (1 - done)) - self.w[state[0], state[1], action]
 
-        delta = reward + (self.gamma * self.w[next_state, next_action] * (1 - done)) - self.w[state, action]
-        self.z[state, action] += 1  # Accumulating traces
-        
-        self.w += self.alpha * delta * self.z
+        self.z[state[0], state[1], action] += 1  # Accumulating traces
+
+        self.w[state[0], state[1], action] += self.alpha * delta * self.z[state[0], state[1], action]
         self.z *= self.gamma * self.lambd  # Decay traces
         
         if done:

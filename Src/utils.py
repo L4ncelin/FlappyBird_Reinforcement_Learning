@@ -25,8 +25,7 @@ def moving_average(data, window_size=50):
 
 def plot_q_values(Q):
     """ 
-    Plot the Q-values for each action in a heatmap, ensuring that x is on the x-axis 
-    and y is on the y-axis by correctly indexing the matrix.
+    Plot the Q-values for each action in a heatmap.
     """
 
     # Extract the x, y values and actions
@@ -66,6 +65,49 @@ def plot_q_values(Q):
     sns.heatmap(q_matrix_flap, ax=axes[1], cmap="coolwarm", cbar_kws={'label': 'Q-value'},
                 xticklabels=x_unique, yticklabels=y_unique)
     axes[1].set_title('Q-values for Flap (Action = 1)')
+    axes[1].set_xlabel('Horizontal Distance to Pipe (x)')
+    axes[1].set_ylabel('Vertical Distance to Pipe (y)')
+
+    # Show the plot
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_w_values(W):
+    """
+    Plot the W-values for each action in a heatmap, ensuring that x is on the x-axis 
+    and y is on the y-axis.
+    
+    Parameters:
+    - W: numpy array of shape (14,22,2) containing W-values
+    """
+
+    # Extract the W-values for each action
+    w_matrix_no_flap = W[:, :, 0]  # Action 0 (No Flap)
+    w_matrix_flap = W[:, :, 1]  # Action 1 (Flap)
+
+    # Operations 
+    w_matrix_no_flap = np.flip(w_matrix_no_flap.T, axis=1)
+    w_matrix_flap = np.flip(w_matrix_flap.T, axis=1)
+
+    # Define x and y labels
+    x_labels = np.arange(W.shape[0])[::-1]  # 14 unique y-values (vertical distance)
+    y_labels = np.arange(-11,11)  # 22 unique x-values (horizontal distance)
+
+
+    # Plot the heatmaps for both actions
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+    # Heatmap for 'No Flap' action (action = 0)
+    sns.heatmap(w_matrix_no_flap, ax=axes[0], cmap="coolwarm", cbar_kws={'label': 'W-value'})
+    axes[0].set_title('W-values for No Flap (Action = 0)')
+    axes[0].set_xlabel('Horizontal Distance to Pipe (x)')
+    axes[0].set_ylabel('Vertical Distance to Pipe (y)')
+
+    # Heatmap for 'Flap' action (action = 1)
+    sns.heatmap(w_matrix_flap, ax=axes[1], cmap="coolwarm", cbar_kws={'label': 'W-value'},
+                xticklabels=x_labels, yticklabels=y_labels)
+    axes[1].set_title('W-values for Flap (Action = 1)')
     axes[1].set_xlabel('Horizontal Distance to Pipe (x)')
     axes[1].set_ylabel('Vertical Distance to Pipe (y)')
 
