@@ -88,7 +88,10 @@ def plot_w_values(W):
 
     # Operations 
     w_matrix_no_flap = np.flip(w_matrix_no_flap.T, axis=1)
+    w_matrix_no_flap = np.vstack((w_matrix_no_flap[11:], w_matrix_no_flap[:11]))
+    
     w_matrix_flap = np.flip(w_matrix_flap.T, axis=1)
+    w_matrix_flap = np.vstack((w_matrix_flap[11:], w_matrix_flap[:11]))
 
     # Define x and y labels
     x_labels = np.arange(W.shape[0])[::-1]  # 14 unique y-values (vertical distance)
@@ -99,7 +102,8 @@ def plot_w_values(W):
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
     # Heatmap for 'No Flap' action (action = 0)
-    sns.heatmap(w_matrix_no_flap, ax=axes[0], cmap="coolwarm", cbar_kws={'label': 'W-value'})
+    sns.heatmap(w_matrix_no_flap, ax=axes[0], cmap="coolwarm", cbar_kws={'label': 'W-value'},
+               xticklabels=x_labels, yticklabels=y_labels)
     axes[0].set_title('W-values for No Flap (Action = 0)')
     axes[0].set_xlabel('Horizontal Distance to Pipe (x)')
     axes[0].set_ylabel('Vertical Distance to Pipe (y)')
