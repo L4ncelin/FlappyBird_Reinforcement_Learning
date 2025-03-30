@@ -1,6 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from tqdm.notebook import tqdm
+from Agents.SarsaLambdaAgent import SarsaLambdaAgent
+from Agents.MonteCarloAgent import MonteCarloAgent
+import gymnasium as gym
 
 
 def plot_rewards(rewards):
@@ -118,3 +122,112 @@ def plot_w_values(W):
     # Show the plot
     plt.tight_layout()
     plt.show()
+
+
+def run_sarsa_agent(num_episodes):
+    """ Runs a single instance of the agent and returns cumulative rewards per episode. """
+    env = gym.make('TextFlappyBird-v0', height=15, width=20, pipe_gap=4)
+
+    # Get the size of the action space
+    action_size = env.action_space.n
+    state_shape = (14, 22)  # Tuple observation space: Discrete(14), Discrete(22)
+
+    # Initialize the Sarsa(λ) agent with the necessary parameters
+    agent = SarsaLambdaAgent(state_size=state_shape, action_size=action_size, alpha=0.2, gamma=0.96, lambd=0.9, epsilon=1.0)
+
+    reward_history = []
+
+    epsilon_min = 0.01  # Minimum exploration
+    epsilon_decay = 0.995  # Gradual reduction
+
+    for episode in range(num_episodes):
+        obs, _ = env.reset()
+        trajectory = []  # Stores (state, action, reward)
+        done = False
+        total_reward = 0
+
+        # Initialize the action using the selection method
+        action = agent.select_action(obs)
+
+        while not done:
+            next_obs, reward, done, _, info = env.step(action)
+            next_action = agent.select_action(next_obs)
+
+            # Add the transition to the trajectory
+            trajectory.append((obs, action, reward))
+
+            # Update the agent using the transition
+            agent.update_policy(obs, action, reward, next_obs, next_action, done)
+
+            obs = next_obs
+            action = next_action
+            total_reward += reward
+
+        reward_history.append(total_reward)
+
+        # Gradually reduce exploration
+        agent.epsilon = max(epsilon_min, agent.epsilon * epsilon_decay)
+
+    smoothed_rewards = moving_average(reward_history, window_size=50)
+
+    return(smoothed_rewards)
+
+def run_monte_carlo_agent(num_episodes):
+    """ Runs a single instance of the agent and returns cumulative rewards per episode. """
+    env = gym.make('TextFlappyBird-v0', height=15, width=20, pipe_gap=4)
+
+    # Initialize the Monte Carlo agent with the necessary parameters
+    agent = MonteCarloAgent(env, epsilon=1.0, gamma=0.96, alpha=0.2)
+    reward_history = []
+
+    epsilon_min = 0.01  # Minimum exploration
+    epsilon_decay = 0.995  # Gradual reduction
+
+    for episode in range(num_episodes):
+        obs, _ = env.reset()
+        trajectory = []  # Stores (state, action, reward)
+        done = False
+        total_reward = 0
+
+        while not done:
+            action = agent.select_action(obs)  # Uses the agent's policy
+            next_obs, reward, done, _, info = env.step(action)
+            trajectory.append((obs, action, reward))  # Store the transition
+            obs = next_obs
+            total_reward += reward
+
+        reward_history.append(total_reward)
+
+        agent.epsilon = max(epsilon_min, agent.epsilon * epsilon_decay)
+        agent.update_policy(trajectory)  # Monte Carlo update after the episode
+
+    smoothed_rewards = moving_average(reward_history, window_size=50)
+
+    return(smoothed_rewards)
+
+
+def plot_confidence_interval(num_episodes = 2000, num_runs = 10, agent_type:str=""):
+
+    if agent_type == "sarsa":
+        # Store all reward curves
+        reward_curves = np.array([run_sarsa_agent(num_episodes) for _ in tqdm(range(num_runs))])
+    elif agent_type == "monte_carlo":
+        # Store all reward curves
+        reward_curves = np.array([run_monte_carlo_agent(num_episodes) for _ in tqdm(range(num_runs))])
+
+    # Compute mean and confidence interval (95%)
+    mean_rewards = np.mean(reward_curves, axis=0)
+    std_rewards = np.std(reward_curves, axis=0)
+    confidence = 1.96 * std_rewards / np.sqrt(num_runs)  # 95% confidence interval
+
+    # Plot results
+    plt.figure(figsize=(10, 6))
+    sns.lineplot(x=np.arange(num_episodes-49), y=mean_rewards, label="Average Cumulative Reward")
+    plt.fill_between(np.arange(num_episodes-49), mean_rewards - confidence, mean_rewards + confidence,
+                    color="blue", alpha=0.2, label="95% Confidence Interval")
+    plt.xlabel("Episodes")
+    plt.ylabel("Cumulative Reward")
+    plt.title("Average Learning Curve with Confidence Interval")
+    plt.legend()
+    plt.show()
+
